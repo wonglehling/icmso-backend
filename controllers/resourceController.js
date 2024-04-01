@@ -64,6 +64,7 @@ const createDoc = async (req, res) => {
   try {
     const authClient = await googleDrive.authorize()
     const uploadedDoc = await googleDrive.uploadFile(authClient, req.file)
+    console.log(req.file);
     // const thumbnailBuffer = await sharp(req.file.path)
     //   .resize({ width: 100, height: 100 })
     //   .toBuffer();
@@ -89,6 +90,8 @@ const createDoc = async (req, res) => {
         resource_file_url_id: uploadedDoc.data.id,
         resource_uploaded_at: new Date().toISOString(),
         resource_updated_at: new Date().toISOString(),
+        resource_file_name: req.file.originalname,
+        resource_file_type: req.file.mimetype,
         ...payload.resource_file_info
       },
     })

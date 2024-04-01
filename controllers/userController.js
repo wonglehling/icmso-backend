@@ -83,13 +83,16 @@ const createDoc = async (req, res) => {
 
 const updateDoc = async (req, res) => {
   try {
-    const query = {
+    const { userId, type } = getUserInfo(res)
+    const query = req.params.id ? {
       ...req.query,
       _id: req.params.id,
       status: "active"
+    } : {
+      ...req.query,
+      _id: userId,
+      status: "active"
     }
-
-    const { userId, type } = getUserInfo(res)
 
     const user = await User.findOneAndUpdate(query, req.body, { new: true });
 
