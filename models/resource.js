@@ -5,7 +5,7 @@ const { Schema } = mongoose
 const resourceSchema = new Schema({
   resource_type: {
     type: String,
-    enum: ["research paper", "journal", "other"],
+    enum: ["research paper", "journal", "other", "folder"],
     default: "other",
   },
   resource_title: {
@@ -27,6 +27,16 @@ const resourceSchema = new Schema({
   {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: true,
+  },
+  resource_project_id:
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    required: true,
+  },
+  resource_project_path: {
+    type: String,
     required: true,
   },
   resource_group_id: {
