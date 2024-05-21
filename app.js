@@ -9,6 +9,9 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const groupRoutes = require('./routes/group');
 const resourceRoutes = require('./routes/resource');
+const projectRoutes = require('./routes/project');
+const activityRoutes = require('./routes/activity');
+
 // const patientRoutes = require('./routes/patient');
 // const itemRoutes = require('./routes/item');
 // const formulaRoutes = require('./routes/formula');
@@ -37,6 +40,8 @@ app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
 app.use('/group', groupRoutes);
 app.use('/resource', resourceRoutes);
+app.use('/project', projectRoutes);
+app.use('/activity', activityRoutes);
 // app.use('/patient', patientRoutes);
 // app.use('/item', itemRoutes);
 // app.use('/formula', formulaRoutes);

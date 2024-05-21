@@ -1,18 +1,18 @@
 const Project = require('../models/project')
-const { UnauthorizedAccessError, DataNotExistError, ServerError } = require('../helpers/exceptions');
-const { checkAccess } = require('../helpers/auth')
+const { DataNotExistError, ServerError } = require('../helpers/exceptions');
 const getUserInfo = require('../helpers/getUserInfo')
-const { hashPassword, comparePassword } = require('../helpers/auth')
-const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const listDoc = async (req, res) => {
   try {
+    const { userId } = getUserInfo(res)
     const query = {
       ...req.query,
+      project_created_by_user_id: userId,
       status: "active"
     }
 
-    const project = await Project.find(query);
+    const project = await Project.find(query).populate({ path: "project_created_by_user_id", select: 'user_first_name user_last_name'});
     if (!project)
       throw new DataNotExistError("No project found!")
     else
@@ -51,10 +51,13 @@ const readDoc = async (req, res) => {
 const createDoc = async (req, res) => {
   try {
     const payload = req.body;
+
+    const projectAvailableGroups = payload.project_groups.map(id => new mongoose.Types.ObjectId(id)); 
     const { userId } = getUserInfo(res)
 
     const newProject = new Project({
       ...payload,
+      project_available_groups: projectAvailableGroups,
       project_created_by_user_id: userId
     })
     await newProject.save();

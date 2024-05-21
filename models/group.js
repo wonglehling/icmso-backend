@@ -3,7 +3,6 @@ const { Schema } = mongoose
 
 // Schema
 const groupSchema = new Schema({
-
 	status: {
 		type: String,
 		enum: ["active", "archived"],

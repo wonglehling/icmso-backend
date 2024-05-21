@@ -18,9 +18,7 @@ const projectSchema = new Schema({
 		default: ''
 	},
 	project_available_groups: {
-		type: [{
-			project_group_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
-		}],
+		type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
 		default: []
 	},
 	project_created_by_user_id: {

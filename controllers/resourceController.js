@@ -10,18 +10,21 @@ const { cloudinary } = require('../config/cloudinary');
 const { promisify } = require('util')
 const unlinkAsync = promisify(fs.unlink)
 const sharp = require('sharp');
+const axios = require('axios');
 
 const listDoc = async (req, res) => {
   try {
+    console.log(req.query);
     const query = {
       ...req.query,
       status: "active"
     }
 
     const resource = await Resource.find(query)
-    .populate({ path: "resource_uploader_id", select: ' -user_password'})
-    .populate({ path: "resource_versions.resource_version_updated_userId", })
+      .populate({ path: "resource_uploader_id", select: ' -user_password' })
+      // .populate({ path: "resource_versions.resource_version_updated_userId", })
 
+      // console.log(resource);
     if (!resource)
       throw new DataNotExistError("No resource found!")
     else
@@ -42,9 +45,9 @@ const readDoc = async (req, res) => {
       status: "active"
     }
 
-    const resource = await Resource.findOne(query)    
-    .populate({ path: "resource_uploader_id", select: ' -user_password'})
-    .populate({ path: "resource_versions.resource_version_updated_userId", })
+    const resource = await Resource.findOne(query)
+      .populate({ path: "resource_uploader_id", select: ' -user_password' })
+      .populate({ path: "resource_versions.resource_version_updated_userId", })
 
 
     if (!resource)
@@ -62,39 +65,55 @@ const readDoc = async (req, res) => {
 
 const createDoc = async (req, res) => {
   try {
-    const authClient = await googleDrive.authorize()
-    const uploadedDoc = await googleDrive.uploadFile(authClient, req.file)
-    console.log(req.file);
-    // const thumbnailBuffer = await sharp(req.file.path)
-    //   .resize({ width: 100, height: 100 })
-    //   .toBuffer();
-
-    // const thumbnailPath = path.join(__dirname, '..', 'uploads', req.file.originalname);
-    // fs.writeFileSync(thumbnailPath, thumbnailBuffer);
-
-    // // Send the URL of the thumbnail to the frontend
-    // const thumbnailUrl = `/uploads/${req.file.originalname}`;
-
-    // const cloudinaryUploadedImage = await cloudinary.uploader.upload("uploads/plus.png");
-    console.log(uploadedDoc);
-    await unlinkAsync(req.file.path)
-    const payload = req.body;
     const { userId } = getUserInfo(res)
+    const payload = req.body;
+    console.log(payload);
+    let newResource;
 
-    const newResource = new Resource({
-      ...payload,
-      resource_uploader_id: userId,
-      resource_file_info: {
-        resource_file_url1: "http://docs.google.com/uc?export=open&id=" + uploadedDoc.data.id,
-        resource_file_url2: "https://drive.google.com/file/d/" + uploadedDoc.data.id + "/view?usp=sharing",
-        resource_file_url_id: uploadedDoc.data.id,
-        resource_uploaded_at: new Date().toISOString(),
-        resource_updated_at: new Date().toISOString(),
-        resource_file_name: req.file.originalname,
-        resource_file_type: req.file.mimetype,
-        ...payload.resource_file_info
-      },
-    })
+    if (payload.resource_type === "folder") {
+      newResource = new Resource({
+        ...payload,
+        resource_uploader_id: userId,
+      })
+
+    } else {
+
+      const authClient = await googleDrive.authorize()
+      const uploadedDoc = await googleDrive.uploadFile(authClient, req.file)
+      const response = await axios.post(process.env.PYTHON_NLP_URL+'/classify-and-keywords', {
+            title: payload.resource_title,
+            abstract: payload.resource_description
+        });
+      // const thumbnailBuffer = await sharp(req.file.path)
+      //   .resize({ width: 100, height: 100 })
+      //   .toBuffer();
+
+      // const thumbnailPath = path.join(__dirname, '..', 'uploads', req.file.originalname);
+      // fs.writeFileSync(thumbnailPath, thumbnailBuffer);
+
+      // // Send the URL of the thumbnail to the frontend
+      // const thumbnailUrl = `/uploads/${req.file.originalname}`;
+
+      // const cloudinaryUploadedImage = await cloudinary.uploader.upload("uploads/plus.png");
+      console.log(uploadedDoc);
+      await unlinkAsync(req.file.path)
+
+      newResource = new Resource({
+        ...payload,
+        resource_uploader_id: userId,
+        resource_props: {category: response.data.category, keywords: ['computer science', response.data.category, ...response.data.keywords]},
+        resource_file_info: {
+          resource_file_url1: "http://docs.google.com/uc?export=open&id=" + uploadedDoc.data.id,
+          resource_file_url2: "https://drive.google.com/file/d/" + uploadedDoc.data.id + "/view?usp=sharing",
+          resource_file_url_id: uploadedDoc.data.id,
+          resource_uploaded_at: new Date().toISOString(),
+          resource_updated_at: new Date().toISOString(),
+          resource_file_name: req.file.originalname,
+          resource_file_type: req.file.mimetype,
+          ...payload.resource_file_info
+        },
+      })
+    }
     await newResource.save();
     res.status(200).json({ message: 'Resource registered successfully', resource: newResource });
 

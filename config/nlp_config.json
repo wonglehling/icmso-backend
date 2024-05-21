@@ -1,0 +1,68 @@
+{
+  "user_categories_resource_rating": {
+    "cs.RO": {
+      "user_id": [
+        "6606c351be9327b3eaca80f6",
+        "6606c351be9327b3eaca80f6"
+      ],
+      "item_id": [
+        "664ad3428000f1c4a4365a5b",
+        "664ad3428000f1c4a4365a5b"
+      ],
+      "rating": [
+        5,
+        5
+      ],
+      "category": [
+        "cs.RO",
+        "cs.RO"
+      ]
+    },
+    "cs.CV": {
+      "user_id": [
+        "6606c351be9327b3eaca80f6",
+        "6606c351be9327b3eaca80f6",
+        "6606c351be9327b3eaca80f6"
+      ],
+      "item_id": [
+        "664ad3428000f1c4a4365a5b",
+        "664ad3428000f1c4a4365a5b",
+        "664ad3428000f1c4a4365a5b"
+      ],
+      "rating": [
+        4,
+        4,
+        5
+      ],
+      "category": [
+        "cs.CV",
+        "cs.CV",
+        "cs.CV"
+      ]
+    }
+  },
+  "user_item_matrix": {
+    "cs.RO": {
+      "664ad3428000f1c4a4365a5b": {
+        "6606c351be9327b3eaca80f6": 5
+      }
+    },
+    "cs.CV": {
+      "664ad3428000f1c4a4365a5b": {
+        "6606c351be9327b3eaca80f6": 4.333333333333333
+      }
+    }
+  },
+  "item_similarity_df": {
+    "cs.RO": {
+      "664ad3428000f1c4a4365a5b": {
+        "664ad3428000f1c4a4365a5b": 1
+      }
+    },
+    "cs.CV": {
+      "664ad3428000f1c4a4365a5b": {
+        "664ad3428000f1c4a4365a5b": 1
+      }
+    }
+  }
+}

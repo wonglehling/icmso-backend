@@ -13,11 +13,11 @@ const resourceSchema = new Schema({
     required: true,
   },
   resource_props: {
-    type: Array,
+    type: Schema.Types.Mixed,
     /**
      * possible options: publication_date, author, keyword, category
      */
-    default: []
+    default: {}
   },
   resource_description: {
     type: String,
