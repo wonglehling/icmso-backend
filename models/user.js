@@ -8,15 +8,14 @@ const userSchema = new Schema({
   },
   user_password: {
     type: String,
-    required: true,
   },
   user_first_name: {
     type: String,
-    required: true,
+    default: "Unregistered User"
   },
   user_last_name: {
     type: String,
-    required: true,
+    default: ""
   },
   user_groups_id: [{
     type: {type: mongoose.Schema.Types.ObjectId, ref: 'Group'},
@@ -73,7 +72,7 @@ const userSchema = new Schema({
       ref: 'Resource'
     },
     resource_added_to_favourite_at: {
-      type: String
+      type: String,
     }
   }],
   status: {

@@ -21,10 +21,6 @@ const recommendationSchema = new Schema({
 			recommendation_of_resource_category: {
 				type: String,
 			},
-			recommendation_of_project_id: {
-				type: mongoose.Schema.Types.ObjectId,
-				ref: 'Project'
-			}
 		}
 	],
 }, { timestamps: true })
