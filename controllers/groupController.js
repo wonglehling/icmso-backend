@@ -7,6 +7,7 @@ const { hashPassword, comparePassword } = require('../helpers/auth')
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 var nodemailer = require('nodemailer');
+const { createFeed } = require('../helpers/feedHelper');
 
 
 const listDoc = async (req, res) => {
@@ -90,6 +91,7 @@ const readDoc = async (req, res) => {
             group_member_type: '$group_members.group_member_type',
             user_first_name: '$group_member_user.user_first_name',
             user_last_name: '$group_member_user.user_last_name',
+            group_member_email: '$group_member_user.user_email',
             group_member_research_interests: '$group_members.group_member_research_interests',
             group_member_join_date: '$group_members.group_member_join_date'
           }
@@ -115,7 +117,7 @@ const readDoc = async (req, res) => {
 const createDoc = async (req, res) => {
   try {
     const payload = req.body;
-    const { userId } = getUserInfo(res)
+    const { userId, user_first_name, user_last_name } = getUserInfo(res)
 
     const newGroup = new Group({
       ...payload,
@@ -135,6 +137,17 @@ const createDoc = async (req, res) => {
       group_created_by_user_id: userId
     })
     await newGroup.save();
+
+    // Create feed
+    const feedBody = {
+      feed_message: user_first_name + " " + user_last_name + ' created a group: ' + newGroup.group_name,
+      feed_type: 'group',
+      feed_activity: 'create',
+      feed_type_id: newGroup._id,
+      feed_created_by_user_id: userId,
+    }
+    await createFeed(feedBody)
+
     res.status(200).json({ message: 'Group registered successfully', group: newGroup });
 
   } catch (error) {
@@ -147,6 +160,7 @@ const createDoc = async (req, res) => {
 
 const updateDoc = async (req, res) => {
   try {
+    const { userId } = getUserInfo(res)
     const query = {
       ...req.query,
       _id: req.params.id,
@@ -169,6 +183,7 @@ const updateDoc = async (req, res) => {
         { $setOnInsert: { user_email: req.body.new_member.group_member_email, user_password: result, user_type: 'user' } },
         { upsert: true, new: true, runValidators: true }
       )
+
       if (newMember.createdAt.valueOf() == newMember.updatedAt.valueOf()) {
         // send email
         var transporter = nodemailer.createTransport({
@@ -205,6 +220,24 @@ const updateDoc = async (req, res) => {
     const { groupId, type } = getUserInfo(res)
 
     const group = await Group.findOneAndUpdate(query, req.body, { new: true });
+    const feedBody = (req.body.new_member && req.body.new_member != {}) ? (
+      // Create feed
+      {
+        feed_message: user_first_name + " " + user_last_name + ' added a member to group: ' + group.group_name,
+        feed_type: 'group',
+        feed_activity: 'add',
+        feed_type_id: req.params.id,
+      }
+    ) : (
+      // Create feed
+      {
+        feed_message: user_first_name + " " + user_last_name + ' updated group details: ' + group.group_name,
+        feed_type: 'group',
+        feed_activity: 'update',
+        feed_type_id: req.params.id,
+      }
+    )
+    await createFeed(feedBody)
 
     if (!group)
       throw new ServerError("Something went wrong. No group was updated!")
@@ -247,6 +280,7 @@ const sendEmail = (req, res) => {
 
 const deleteDoc = async (req, res) => {
   try {
+    const { userId, user_first_name, user_last_name } = getUserInfo(res)
     const query = {
       ...req.query,
       _id: req.params.id,
@@ -254,6 +288,15 @@ const deleteDoc = async (req, res) => {
     }
 
     const group = await Group.findOneAndUpdate(query, { status: "archived" }, { new: true });
+    // Create feed
+    const feedBody = {
+      feed_message: user_first_name+ " " + user_last_name + ' deleted group: ' + group.group_name,
+      feed_type: 'group',
+      feed_activity: 'delete',
+      feed_type_id: group._id,
+      feed_created_by_user_id: userId,
+    }
+    await createFeed(feedBody)
     if (!group)
       throw new DataNotExistError("No group found!")
     else

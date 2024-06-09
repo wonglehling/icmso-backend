@@ -14,7 +14,6 @@ const axios = require('axios');
 const User = require('../models/user');
 const mongoose = require('mongoose');
 
-
 const listDoc = async (req, res) => {
   try {
     const { userId } = getUserInfo(res)
@@ -62,12 +61,23 @@ const listDoc = async (req, res) => {
         }
       },
       {
-        $match: {
+        $match: !req.query.resource_project_path ? {
           $or: [
             { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
             { 'projects.project_available_groups': { $size: 0 } }
           ]
-        }
+
+        } :
+          {
+            $and: [
+              { 'resource_project_path': req.query.resource_project_path },
+              {
+                $or: [
+                  { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
+                  { 'projects.project_available_groups': { $size: 0 } }
+                ]
+              }]
+          }
       },
       {
         $lookup: {
@@ -241,7 +251,7 @@ const listDoc = async (req, res) => {
     if (!resource)
       throw new DataNotExistError("No resource found!")
     else
-      res.status(200).json({resource, recommended_resource});
+      res.status(200).json({ resource, recommended_resource });
   } catch (error) {
     res.status(422).json({
       error: error.name,

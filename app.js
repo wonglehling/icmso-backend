@@ -11,6 +11,8 @@ const groupRoutes = require('./routes/group');
 const resourceRoutes = require('./routes/resource');
 const projectRoutes = require('./routes/project');
 const activityRoutes = require('./routes/activity');
+const commentRoutes = require('./routes/comment');
+const homeRoutes = require('./routes/home');
 
 // const patientRoutes = require('./routes/patient');
 // const itemRoutes = require('./routes/item');
@@ -42,6 +44,8 @@ app.use('/group', groupRoutes);
 app.use('/resource', resourceRoutes);
 app.use('/project', projectRoutes);
 app.use('/activity', activityRoutes);
+app.use('/comment', commentRoutes);
+app.use('/home', homeRoutes);
 // app.use('/patient', patientRoutes);
 // app.use('/item', itemRoutes);
 // app.use('/formula', formulaRoutes);

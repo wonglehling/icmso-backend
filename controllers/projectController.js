@@ -1,4 +1,5 @@
 const Project = require('../models/project')
+const Comment = require('../models/comment')
 const { DataNotExistError, ServerError } = require('../helpers/exceptions');
 const getUserInfo = require('../helpers/getUserInfo')
 const mongoose = require('mongoose');
@@ -31,7 +32,7 @@ const listDoc = async (req, res) => {
       {
         $match: {
           $or: [
-            { 'groups.group_members.group_member_id':  new mongoose.Types.ObjectId(userId) },
+            { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
             { 'project_available_groups': { $size: 0 } }
           ]
         }
@@ -93,7 +94,14 @@ const readDoc = async (req, res) => {
       status: "active"
     }
 
-    const project = await Project.findOne(query)
+    let project = await Project.findOne(query)
+    // get comments for this project, sort by createdAt in descending order, populate user commented
+    const comments = await Comment.find
+      ({ comment_project_id: new mongoose.Types.ObjectId(req.params.id), status: "active" })
+      .populate({ path: "comment_created_by_user_id", select: 'user_first_name user_last_name' })
+      .sort({ createdAt: -1 });
+    project = project.toObject()
+    project = { ...project, comments: comments }
 
     if (!project)
       throw new DataNotExistError("No project found!")
@@ -113,7 +121,7 @@ const createDoc = async (req, res) => {
     const payload = req.body;
 
     const projectAvailableGroups = payload.project_groups.map(id => new mongoose.Types.ObjectId(id));
-    const { userId } = getUserInfo(res)
+    const { userId, user_first_name, user_last_name } = getUserInfo(res)
 
     const newProject = new Project({
       ...payload,
@@ -121,6 +129,15 @@ const createDoc = async (req, res) => {
       project_created_by_user_id: userId
     })
     await newProject.save();
+    // Create feed
+    const feedBody = {
+      feed_type: 'project',
+      feed_message: user_first_name+ " " + user_last_name + ' created new project: ' + project.project_name,
+      feed_activity: 'create',
+      feed_type_id: newProject._id,
+      feed_created_by_user_id: userId,
+    }
+    await createFeed(feedBody)
     res.status(200).json({ message: 'Project registered successfully', project: newProject });
 
   } catch (error) {
@@ -139,9 +156,18 @@ const updateDoc = async (req, res) => {
       status: "active"
     }
 
-    const { projectId, type } = getUserInfo(res)
+    const { userId, user_first_name, user_last_name, type } = getUserInfo(res)
 
     const project = await Project.findOneAndUpdate(query, req.body, { new: true });
+    // Create feed
+    const feedBody = {
+      feed_message: user_first_name+ " " + user_last_name + ' updated the project: ' + project.project_name,
+      feed_type: 'project',
+      feed_activity: 'update',
+      feed_type_id: project._id,
+      feed_created_by_user_id: userId,
+    }
+    await createFeed(feedBody)
 
     if (!project)
       throw new ServerError("Something went wrong. No project was updated!")
@@ -165,6 +191,15 @@ const deleteDoc = async (req, res) => {
     }
 
     const project = await Project.findOneAndUpdate(query, { status: "archived" }, { new: true });
+    // Create feed
+    const feedBody = {
+      feed_message: user_first_name+ " " + user_last_name + ' deleted project: ' + project.project_name,
+      feed_type: 'project',
+      feed_activity: 'delete',
+      feed_type_id: project._id,
+      feed_created_by_user_id: userId,
+    }
+    await createFeed(feedBody)
     if (!project)
       throw new DataNotExistError("No project found!")
     else
