@@ -21,7 +21,7 @@ const listDoc = async (req, res) => {
       ...req.query,
       status: "active"
     }
-
+console.log(req.query);
     // const resources = await Resource.find(query)
     //   .populate({ path: "resource_uploader_id", select: ' -user_password' })
     // .populate({ path: "resource_versions.resource_version_updated_userId", })
@@ -72,6 +72,9 @@ const listDoc = async (req, res) => {
             $and: [
               { 'resource_project_path': req.query.resource_project_path },
               {
+                'resource_project_id': new mongoose.Types.ObjectId(req.query.resource_project_id)
+              },
+              {
                 $or: [
                   { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
                   { 'projects.project_available_groups': { $size: 0 } }
@@ -90,6 +93,20 @@ const listDoc = async (req, res) => {
       {
         $unwind: {
           path: '$created_by_user',
+          preserveNullAndEmptyArrays: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'resource_uploader_id',
+          foreignField: '_id',
+          as: 'uploaded_by_user'
+        }
+      },
+      {
+        $unwind: {
+          path: '$uploaded_by_user',
           preserveNullAndEmptyArrays: false
         }
       },
@@ -129,6 +146,12 @@ const listDoc = async (req, res) => {
           resource_props: { $first: '$resource_props' },
           resource_description: { $first: '$resource_description' },
           resource_uploader_id: { $first: '$resource_uploader_id' },
+          resource_uploaded_by_user: {
+            $first: {
+              user_first_name: '$uploaded_by_user.user_first_name',
+              user_last_name: '$uploaded_by_user.user_last_name'
+            }
+          },
           resource_project_id: { $first: '$resource_project_id' },
           resource_project_path: { $first: '$resource_project_path' },
           resource_group_id: { $first: '$resource_group_id' },
@@ -196,6 +219,20 @@ const listDoc = async (req, res) => {
       },
       {
         $lookup: {
+          from: 'users',
+          localField: 'resource_uploader_id',
+          foreignField: '_id',
+          as: 'uploaded_by_user'
+        }
+      },
+      {
+        $unwind: {
+          path: '$uploaded_by_user',
+          preserveNullAndEmptyArrays: false
+        }
+      },
+      {
+        $lookup: {
           from: 'recommendations',
           localField: '_id', // This is the resource _id
           foreignField: 'recommendation_of_resources.recommendation_of_resource_id',
@@ -235,6 +272,12 @@ const listDoc = async (req, res) => {
           resource_uploader_id: { $first: '$resource_uploader_id' },
           resource_project_id: { $first: '$resource_project_id' },
           resource_project_path: { $first: '$resource_project_path' },
+          resource_uploaded_by_user: {
+            $first: {
+              user_first_name: '$uploaded_by_user.user_first_name',
+              user_last_name: '$uploaded_by_user.user_last_name'
+            }
+          },
           resource_group_id: { $first: '$resource_group_id' },
           resource_file_info: { $first: '$resource_file_info' },
           resource_versions: { $first: '$resource_versions' },
@@ -323,6 +366,20 @@ const readDoc = async (req, res) => {
       {
         $lookup: {
           from: 'users',
+          localField: 'resource_uploader_id',
+          foreignField: '_id',
+          as: 'uploaded_by_user'
+        }
+      },
+      {
+        $unwind: {
+          path: '$uploaded_by_user',
+          preserveNullAndEmptyArrays: false
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
           localField: '_id', // This is the resource _id
           foreignField: 'user_favourite_resources.resource_id',
           as: 'user_favourite_resources'
@@ -356,6 +413,12 @@ const readDoc = async (req, res) => {
           resource_props: { $first: '$resource_props' },
           resource_description: { $first: '$resource_description' },
           resource_uploader_id: { $first: '$resource_uploader_id' },
+          resource_uploaded_by_user: {
+            $first: {
+              user_first_name: '$uploaded_by_user.user_first_name',
+              user_last_name: '$uploaded_by_user.user_last_name'
+            }
+          },
           resource_project_id: { $first: '$resource_project_id' },
           resource_project_path: { $first: '$resource_project_path' },
           resource_group_id: { $first: '$resource_group_id' },
