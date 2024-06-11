@@ -452,7 +452,11 @@ const createDoc = async (req, res) => {
   try {
     const { userId } = getUserInfo(res)
     const payload = req.body;
-    console.log(payload);
+    console.log("payload", payload);
+    const resource_props = JSON.parse(payload.resource_props);
+    // remove the uploaded file from the payload.resource_props
+    delete resource_props.resource_file;
+
     let newResource;
 
     if (payload.resource_type === "folder") {
@@ -480,13 +484,12 @@ const createDoc = async (req, res) => {
       // const thumbnailUrl = `/uploads/${req.file.originalname}`;
 
       // const cloudinaryUploadedImage = await cloudinary.uploader.upload("uploads/plus.png");
-      console.log(uploadedDoc);
       await unlinkAsync(req.file.path)
 
       newResource = new Resource({
         ...payload,
         resource_uploader_id: userId,
-        resource_props: { category: response.data.category, keywords: ['computer science', response.data.category, ...response.data.keywords] },
+        resource_props: { category: response.data.category, keywords: ['computer science', response.data.category, ...response.data.keywords], ...resource_props },
         resource_file_info: {
           resource_file_url1: "http://docs.google.com/uc?export=open&id=" + uploadedDoc.data.id,
           resource_file_url2: "https://drive.google.com/file/d/" + uploadedDoc.data.id + "/view?usp=sharing",

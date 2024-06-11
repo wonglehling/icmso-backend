@@ -3,6 +3,7 @@ const Comment = require('../models/comment')
 const { DataNotExistError, ServerError } = require('../helpers/exceptions');
 const getUserInfo = require('../helpers/getUserInfo')
 const mongoose = require('mongoose');
+const { createFeed } = require('../helpers/feedHelper');
 
 const listDoc = async (req, res) => {
   try {
@@ -132,7 +133,7 @@ const createDoc = async (req, res) => {
     // Create feed
     const feedBody = {
       feed_type: 'project',
-      feed_message: user_first_name+ " " + user_last_name + ' created new project: ' + project.project_name,
+      feed_message: user_first_name+ " " + user_last_name + ' created new project: ' + newProject.project_name,
       feed_activity: 'create',
       feed_type_id: newProject._id,
       feed_created_by_user_id: userId,
