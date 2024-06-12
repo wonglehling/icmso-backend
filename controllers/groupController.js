@@ -177,10 +177,11 @@ const updateDoc = async (req, res) => {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
         counter += 1;
       }
+      const hashedPassword = await hashPassword(result)
 
       const newMember = await User.findOneAndUpdate(
         { user_email: req.body.new_member.group_member_email },
-        { $setOnInsert: { user_email: req.body.new_member.group_member_email, user_password: result, user_type: 'user' } },
+        { $setOnInsert: { user_email: req.body.new_member.group_member_email, user_password: hashedPassword, user_type: 'user' } },
         { upsert: true, new: true, runValidators: true }
       )
 

@@ -59,7 +59,7 @@ const userSchema = new Schema({
   },
   user_type: {
     type: String,
-    enum: ["admin", "user"],
+    enum: ["admin", "user", "system admin"],
     default: "user",
   },
   resource_updated_at: {

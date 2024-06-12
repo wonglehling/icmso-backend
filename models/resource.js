@@ -5,7 +5,7 @@ const { Schema } = mongoose
 const resourceSchema = new Schema({
   resource_type: {
     type: String,
-    enum: ["article", "code", "dataset", "ebook", "presentation", "report", "research paper", "other"],
+    enum: ["article", "code", "dataset", "ebook", "presentation", "report", "research paper", "other", "folder"],
     default: "other",
   },
   resource_title: {

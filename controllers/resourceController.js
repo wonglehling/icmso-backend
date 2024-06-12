@@ -21,7 +21,7 @@ const listDoc = async (req, res) => {
       ...req.query,
       status: "active"
     }
-console.log(req.query);
+    console.log(req.query);
     // const resources = await Resource.find(query)
     //   .populate({ path: "resource_uploader_id", select: ' -user_password' })
     // .populate({ path: "resource_versions.resource_version_updated_userId", })
@@ -453,10 +453,12 @@ const createDoc = async (req, res) => {
     const { userId } = getUserInfo(res)
     const payload = req.body;
     console.log("payload", payload);
-    const resource_props = JSON.parse(payload.resource_props);
-    // remove the uploaded file from the payload.resource_props
-    delete resource_props.resource_file;
-
+    let resource_props = {}
+    if (payload.resource_props) {
+      resource_props = JSON.parse(payload.resource_props);
+      // remove the uploaded file from the payload.resource_props
+      delete resource_props.resource_file;
+    }
     let newResource;
 
     if (payload.resource_type === "folder") {
@@ -464,6 +466,7 @@ const createDoc = async (req, res) => {
         ...payload,
         resource_uploader_id: userId,
       })
+    console.log("payload", payload);
 
     } else {
 
@@ -508,7 +511,8 @@ const createDoc = async (req, res) => {
   } catch (error) {
     res.status(401).json({
       error: error.name,
-      message: error.message
+      message: error.message,
+      errorD: error
     })
   }
 }

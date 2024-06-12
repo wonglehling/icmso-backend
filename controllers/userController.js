@@ -5,6 +5,7 @@ const getUserInfo = require('../helpers/getUserInfo')
 const { hashPassword, comparePassword } = require('../helpers/auth')
 const jwt = require('jsonwebtoken');
 const { default: mongoose } = require('mongoose');
+var nodemailer = require('nodemailer');
 
 const listDoc = async (req, res) => {
   try {
@@ -59,21 +60,53 @@ const createDoc = async (req, res) => {
         err: 'Email is required!'
       })
     }
-
-    if (!payload.user_password || payload.user_password.length < 6) {
+    if (!payload.user_password || payload.user_password.length === 0) {
+      let result = '';
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const charactersLength = characters.length;
+      let counter = 0;
+      while (counter < 8) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        counter += 1;
+      }
+      payload.user_password = result;
+    } else if (payload.user_password.length < 6) {
       return res.json({
         err: 'Password of at least 6 characters long is required!'
       })
     }
 
-    else {
-      const hashedPassword = await hashPassword(payload.user_password)
-      // find user if exist in db
-      // create user record in db
-      const newUser = new User({ ...payload, user_password: hashedPassword })
-      await newUser.save();
-      res.status(201).json({ message: 'User registered successfully' });
-    }
+    const hashedPassword = await hashPassword(payload.user_password)
+    // find user if exist in db
+    // create user record in db
+    const newUser = new User({ ...payload, user_password: hashedPassword })
+    await newUser.save();
+
+    // send email
+    var transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SENDER_EMAIL,
+        pass: process.env.SENDER_PASS
+      }
+    });
+
+    var mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: payload.user_email,
+      subject: 'ICMSO Registration',
+      html: `<h1>Welcome to ICMSO</h1><p>Someone added you into the ICMS System as <b>${payload.user_type}</b>. </p><p>Click <a href="${process.env.CLIENT_URL}/login">here</a> to login now, using the credentials as follow: <li>Email: ${payload.user_email}</li><li>Password: ${payload.user_password}</li></p>`
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+       console.log(error);
+      }
+    });
+
+
+    res.status(201).json({ message: 'User registered successfully' });
+
   } catch (error) {
     res.status(401).json({
       error: error.name,

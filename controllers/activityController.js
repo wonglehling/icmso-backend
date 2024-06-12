@@ -10,6 +10,7 @@ const axios = require('axios');
 const path = require('path');
 const User = require('../models/user');
 const configPath = path.join(__dirname, '../config/nlp_config.json');
+const fuzzy = require('fuzzy');
 
 const listDoc = async (req, res) => {
   try {
@@ -62,7 +63,7 @@ const createDoc = async (req, res) => {
     const { userId } = getUserInfo(res)
     let actReason = "", actRating = 0
     if (payload.duration > 10) {
-      actReason += "browse>5seconds"
+      actReason += "browse>10seconds"
       actRating += 2.5
     } else if (payload.duration > 5) {
       actReason += "browse>5seconds"
@@ -90,11 +91,11 @@ const createDoc = async (req, res) => {
     const newActivity = await Activity.findOneAndUpdate(
       { activity_by_user_id: userId, activity_to_resource_id: payload.activity_to_resource_id },
       {
-          ...payload,
-          activity_type: actReason,
-          activity_rating_gained: actRating,
-          activity_by_user_id: userId
-        },
+        ...payload,
+        activity_type: actReason,
+        activity_rating_gained: actRating,
+        activity_by_user_id: userId
+      },
       { upsert: true, new: true }
     )
 
@@ -325,17 +326,60 @@ function readDataFromConfig() {
 }
 
 const searchItem = async (req, res) => {
-  const { query } = req.query;
+  let { query } = req.query;
+  let category = "";
   const { userId } = getUserInfo(res)
+  // check query contains ':'
+  if (query.includes(':')) {
+    console.log("query", query);
+    const CATEGORY_MAP = [
+      { key: "cs.LG", value: "Machine Learning" },
+      { key: "cs.CV", value: "Computer Vision and Pattern Recognition" },
+      { key: "cs.AI", value: "Artificial Intelligence" },
+      { key: "cs.CL", value: "Computation and Language" },
+      { key: "cs.IT", value: "Information Theory" },
+      { key: "cs.CR", value: "Cryptography and Security" },
+      { key: "cs.RO", value: "Robotics" },
+      { key: "cs.SY", value: "Systems and Control" },
+      { key: "cs.DS", value: "Data Structures and Algorithms" },
+      { key: "cs.NI", value: "Networking and Internet Architecture" },
+    ]
+    category = query.split(':')[0].trim();
+
+    // check if category is in CATEGORY_MAP using fuzzy search
+    const results = fuzzy.filter(category, CATEGORY_MAP, {
+      pre: '<b>',
+      post: '</b>',
+      extract: el => el.value
+    });
+
+    if (results.length > 0) {
+      category = results[0].original.key;
+    } else {
+      category = "";
+    }
+
+    query = query.split(':')[1].trim();
+  }
+
+  let findQuery = {
+    $or: [
+      { resource_title: { $regex: query, $options: 'i' } },
+      { resource_description: { $regex: query, $options: 'i' } }
+    ]
+  }
+
+  if (category !== "") {
+    findQuery = {
+      ...findQuery,
+      "resource_props.category": category
+    }
+  }
+  console.log(findQuery);
 
   try {
     // Search resources
-    const resources = await Resource.find({
-      $or: [
-        { resource_title: { $regex: query, $options: 'i' } },
-        { resource_description: { $regex: query, $options: 'i' } }
-      ]
-    });
+    const resources = await Resource.find(findQuery);
 
     // Search projects
     // const projects = await Project.find({
