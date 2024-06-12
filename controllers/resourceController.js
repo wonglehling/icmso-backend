@@ -62,10 +62,14 @@ const listDoc = async (req, res) => {
       },
       {
         $match: !req.query.resource_project_path ? {
-          $or: [
-            { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
-            { 'projects.project_available_groups': { $size: 0 } }
-          ]
+          $and: [
+            { 'resource_type': {$ne : 'folder'} },
+            {
+              $or: [
+                { 'groups.group_members.group_member_id': new mongoose.Types.ObjectId(userId) },
+                { 'projects.project_available_groups': { $size: 0 } }
+              ]
+            }]
 
         } :
           {
@@ -466,7 +470,7 @@ const createDoc = async (req, res) => {
         ...payload,
         resource_uploader_id: userId,
       })
-    console.log("payload", payload);
+      console.log("payload", payload);
 
     } else {
 
